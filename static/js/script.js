@@ -69,9 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize defaults on load
     if (systemPromptEl) systemPromptEl.value = defaultPrompt;
 
-    function openSettings() {
+    async function openSettings() {
         settingsPanel.classList.add('open');
         settingsOverlay.classList.add('active');
+        await refreshStats();
     }
 
     function closeSettings() {
@@ -118,11 +119,40 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await fetch('/reset', { method: 'POST' });
             document.getElementById('chatHistory').innerHTML = ''; // Clear chat history visually
+            await refreshStats();
         } catch(err) {
             console.error('Error resetting', err);
         }
     });
 });
+
+async function refreshStats() {
+    try {
+        const res = await fetch('/stats');
+        const data = await res.json();
+        
+        document.getElementById('stat-model').innerText = data.model;
+        document.getElementById('stat-messages').innerText = data.messages_sent;
+        
+        const indicator = document.getElementById('status-indicator');
+        const errorEl = document.getElementById('status-error');
+        
+        indicator.className = ''; // reset
+        
+        if (data.status === 'error') {
+            indicator.classList.add('indicator-red');
+            errorEl.innerText = data.last_error;
+            errorEl.classList.remove('hidden');
+        } else {
+            // Logic for yellow: maybe high message count or RPM? 
+            // For now, let's just keep it green if no error.
+            indicator.classList.add('indicator-green');
+            errorEl.classList.add('hidden');
+        }
+    } catch (err) {
+        console.error('Error fetching stats:', err);
+    }
+}
 
 // ------ Sprite Control Engine ------ //
 
@@ -286,6 +316,9 @@ async function sendMessage() {
         // Log to history after all animation finishes
         const finalEmotion = segments.length > 0 ? segments[segments.length - 1].emotion : 'neutral';
         appendCarmensitaMessage(fullResponse, finalEmotion);
+        
+        // Refresh stats silently after each message
+        refreshStats();
         
         // Hide bubble after a delay if not talking anymore
         setTimeout(() => {

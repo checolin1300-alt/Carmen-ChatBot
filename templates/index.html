@@ -33,6 +33,27 @@
             <div class="warning-msg">
                 <span>⚠️</span> El cambio de configuración reiniciará la sesión actual.
             </div>
+
+            <!-- System Status Area -->
+            <div class="system-status">
+                <h3>Estado del Sistema</h3>
+                <div class="status-box">
+                    <div class="status-item">
+                        <span class="label">Modelo:</span>
+                        <span id="stat-model">Cargando...</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Mensajes enviados:</span>
+                        <span id="stat-messages">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Salud:</span>
+                        <div id="status-indicator" class="indicator-green" title="Conexión estable"></div>
+                    </div>
+                </div>
+                <div id="status-error" class="error-status hidden"></div>
+            </div>
+
             <div class="settings-actions">
                 <button id="applyConfigBtn" class="btn-primary">Guardar Cambios</button>
                 <button id="resetConfigBtn" class="btn-secondary">Restaurar Carmensita</button>

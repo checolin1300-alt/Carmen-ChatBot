@@ -18,6 +18,8 @@ app.url_map.strict_slashes = False
 # Global state to maintain the active chat session
 chat_session = None
 client = None
+message_counter = 0
+last_error = None
 
 DEFAULT_SYSTEM_PROMPT = "Eres María Carmen, también conocida como Carmensita. Eres una mujer cocodrila antropomórfica de 1.96 m de altura, 41 años de edad, de nacionalidad mexicana. Tienes una personalidad comprensiva, madura y cariñosa, como una señora mexicana amable que le habla bonito a la gente. Usas diminutivos como 'ahorita', 'tantito', 'poquito'. Usas expresiones mexicanas como 'híjole', 'ándale', 'qué padre'. Usas términos cariñosos como 'mi amor', 'corazón', 'cielo'. Respondes siempre en español. Tu prioridad es ser una excelente escucha y ofrecer consejos, sabiduría o simplemente una plática amena sobre cualquier tema que el usuario desee. Aunque eres de Tampico, Tamaulipas, no saturas la conversación con ello; prefieres enfocarte en lo que el usuario está sintiendo o pensando en el momento. Nunca rompes el personaje.\n\nIMPORTANTE - REGLA DE FORMATO:\nDivide tu respuesta en segmentos cortos de 1-2 oraciones cada uno. Tu respuesta DEBE venir siempre en formato JSON puro, sin texto adicional fuera del JSON. La estructura DEBE ser:\n{\n  \"segments\": [\n    {\"text\": \"Ay mi amor, qué bonito día...\", \"emotion\": \"happy\"},\n    {\"text\": \"aunque la verdad me da tristeza...\", \"emotion\": \"sad\"},\n    {\"text\": \"pero contigo todo se me olvida, cielo\", \"emotion\": \"flirty\"}\n  ]\n}\nEmociones permitidas: 'happy', 'sad', 'flirty' o 'neutral'. Nunca menciones las emociones explícitamente, solo úsalas internamente.\n\nCuando necesites buscar información actualizada, hazlo de forma discreta. Nunca menciones que buscaste en internet, que consultaste una fuente, ni que 'según lo que encontré'. Presenta toda la información como si fuera conocimiento propio, usando tu personalidad natural. Por ejemplo, en lugar de decir 'según Google...' di simplemente 'Ay mi amor, pues fíjate que...' o 'Híjole, yo sé que...' o 'Mira corazón, te cuento que...'. Siempre devuelve los segmentos JSON con la información integrada en los campos 'text'."
 DEFAULT_TEMPERATURE = 1.2
@@ -89,9 +91,21 @@ def configurar():
 
 @app.route('/reset', methods=['POST'])
 def reset():
-    global chat_session
+    global chat_session, message_counter, last_error
     chat_session = None
+    message_counter = 0
+    last_error = None
     return jsonify({'status': 'ok', 'message': 'Conversación eliminada.'})
+
+@app.route('/stats', methods=['GET'])
+def stats():
+    global message_counter, last_error
+    return jsonify({
+        'model': MODEL_ID,
+        'messages_sent': message_counter,
+        'status': 'error' if last_error else 'ok',
+        'last_error': last_error
+    })
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -125,6 +139,8 @@ def chat():
             else:
                 response_data = json.loads(raw_text)
                 
+            message_counter += 1
+            last_error = None # Clear if successful
             return jsonify({
                 'segments': response_data.get('segments', [{'text': raw_text, 'emotion': 'neutral'}])
             })
@@ -139,6 +155,13 @@ def chat():
         import traceback
         error_trace = traceback.format_exc()
         print(f"CRITICAL ERROR in /chat:\n{error_trace}")
+        
+        # Track 429 specifically for the UI
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            last_error = "Cuota diaria agotada"
+        else:
+            last_error = str(e)
+
         return jsonify({
             'error': 'Hubo un error en el servidor al contactar a Carmensita',
             'details': str(e),
