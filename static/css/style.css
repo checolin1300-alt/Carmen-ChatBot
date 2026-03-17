@@ -96,7 +96,7 @@ body {
 /* Manga Speech Bubble Redesign */
 .speech-bubble {
     position: absolute;
-    top: 5%;
+    top: -15%; /* Moved higher to avoid covering the face */
     left: 50%;
     transform: translateX(-50%);
     width: 95%;
