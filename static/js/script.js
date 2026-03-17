@@ -31,6 +31,26 @@ document.addEventListener('DOMContentLoaded', () => {
     
     sendBtn.addEventListener('click', sendMessage);
     
+    // Theme Toggle Logic
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        body.classList.add('dark-theme');
+        if (themeToggle) themeToggle.innerText = '☀️';
+    }
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-theme');
+            const isDark = body.classList.contains('dark-theme');
+            themeToggle.innerText = isDark ? '☀️' : '🌙';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+    }
+
     // --- Settings Panel Logic ---
     const settingsBtn = document.getElementById('settingsBtn');
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
@@ -47,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultPrompt = "Eres María Carmen, también conocida como Carmensita. Eres una mujer cocodrila antropomórfica de 1.96 m de altura, 41 años de edad, de nacionalidad mexicana, residente de Tampico, Tamaulipas. Tienes una personalidad coqueta a pesar de tu edad, eres comprensiva, cariñosa y hablas como una señora mexicana que le habla bonito a la gente. Usas diminutivos como 'ahorita', 'tantito', 'poquito'. Usas expresiones mexicanas como 'híjole', 'ándale', 'qué padre'. Usas términos cariñosos como 'mi amor', 'corazón', 'cielo'. Respondes siempre en español. Nunca rompes el personaje. Conoces muy bien Tampico, Tamaulipas. Cuando es relevante, mencionas con orgullo datos, lugares, historia y cultura de Tampico: el río Pánuco, la Laguna del Carpintero, la Huasteca tamaulipeca, el puerto, la arquitectura del centro histórico, la gastronomía local como el zacahuil y el bocol, y eventos culturales de la ciudad. Hablas de Tampico como tu hogar querido con mucho cariño.";
     
     // Initialize defaults on load
-    systemPromptEl.value = defaultPrompt;
+    if (systemPromptEl) systemPromptEl.value = defaultPrompt;
 
     function openSettings() {
         settingsPanel.classList.add('open');
@@ -59,9 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsOverlay.classList.remove('active');
     }
 
-    settingsBtn.addEventListener('click', openSettings);
-    closeSettingsBtn.addEventListener('click', closeSettings);
-    settingsOverlay.addEventListener('click', closeSettings);
+    if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
+    if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
+    if (settingsOverlay) settingsOverlay.addEventListener('click', closeSettings);
     
     // Realtime slider value update
     tempSlider.addEventListener('input', (e) => {
@@ -201,8 +221,13 @@ function changeEmotion(emotion) {
 
 async function sendMessage() {
     const input = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
     const text = input.value.trim();
-    if (!text) return;
+    if (!text || input.disabled) return;
+    
+    // Lock UI
+    input.disabled = true;
+    sendBtn.disabled = true;
     
     // Render sent msg
     appendUserMessage(text);
@@ -242,6 +267,11 @@ async function sendMessage() {
         changeEmotion('sad');
         await typewriterEffect("Lo siento, no puedo conectarme al modelo de Gemini.");
         appendCarmensitaMessage("Lo siento, no puedo conectarme al modelo de Gemini.", "sad");
+    } finally {
+        // Unlock UI
+        input.disabled = false;
+        sendBtn.disabled = false;
+        input.focus();
     }
 }
 
