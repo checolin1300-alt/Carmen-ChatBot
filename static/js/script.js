@@ -227,7 +227,7 @@ function changeEmotion(emotion) {
         
         // Apply overlays or full facial structures
         if (e === 'happy') {
-            faceSrc = 'face_happy.png';
+            faceSrc = 'Face_Happy.png';
             eyesSrc = null;
         } else if (e === 'flirty') {
             faceSrc = 'Face_Flirty.png';
@@ -357,9 +357,18 @@ function appendCarmensitaMessage(text, emotion) {
     const row = document.createElement('div');
     row.className = 'message carmensita';
     
+    // Mapping for avatar icons (handle casing)
+    const emotionMap = {
+        'happy': 'Face_Happy.png',
+        'sad': 'Face_Sad.png',
+        'flirty': 'Face_Flirty.png',
+        'neutral': 'face_neutral.png'
+    };
+    const spriteName = emotionMap[emotion] || 'face_neutral.png';
+
     const avatar = document.createElement('img');
     avatar.className = 'carmensita-avatar';
-    avatar.src = `${window.STATIC_SPRITES_URL}face_${emotion}.png`;
+    avatar.src = `${window.STATIC_SPRITES_URL}${spriteName}`;
     avatar.onerror = function() {
         this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E";
     };

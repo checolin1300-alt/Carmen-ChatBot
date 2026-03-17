@@ -109,7 +109,7 @@ def stats():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    global chat_session, client
+    global chat_session, client, message_counter, last_error
     
     if not client or not chat_session:
         if not init_genai():
