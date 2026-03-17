@@ -284,7 +284,8 @@ async function sendMessage() {
         changeEmotion('happy');
 
         // Log to history after all animation finishes
-        appendCarmensitaMessage(fullResponse, segments[segments.length - 1].emotion);
+        const finalEmotion = segments.length > 0 ? segments[segments.length - 1].emotion : 'neutral';
+        appendCarmensitaMessage(fullResponse, finalEmotion);
         
         // Hide bubble after a delay if not talking anymore
         setTimeout(() => {
