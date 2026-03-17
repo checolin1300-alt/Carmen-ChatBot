@@ -128,46 +128,63 @@ def chat():
         response = chat_session.send_message(user_msg)
         raw_text = response.text
         
-        # Robustly try to extract JSON from the response text
+        # Robust JSON extraction and repair logic
         try:
             import re
             
-            # 1. Strip whitespace and markdown markers first
+            # --- PHASE 1: PRE-CLEANING ---
             clean_text = raw_text.strip()
-            if clean_text.startswith("```json"):
-                clean_text = clean_text[7:]
-            if clean_text.endswith("```"):
-                clean_text = clean_text[:-3]
+            # Remove markdown blocks if present
+            clean_text = re.sub(r'^```(?:json)?', '', clean_text, flags=re.MULTILINE)
+            clean_text = re.sub(r'```$', '', clean_text, flags=re.MULTILINE)
             clean_text = clean_text.strip()
             
-            # 2. Extract content between first { and last }
-            json_match = re.search(r'\{.*\}', clean_text, re.DOTALL)
-            if json_match:
-                json_to_parse = json_match.group(0)
+            # --- PHASE 2: JSON EXTRACTION ---
+            # Try to find the first { and the last }
+            json_match = re.search(r'(\{.*\})', clean_text, re.DOTALL)
+            json_to_parse = json_match.group(1) if json_match else clean_text
+
+            # --- PHASE 3: PARSING ---
+            response_data = None
+            try:
+                response_data = json.loads(json_to_parse)
+            except Exception:
+                # Try to fix common issues (single quotes, trailing commas)
+                try:
+                    # Very basic fixes
+                    fixed = json_to_parse.replace("'", '"')
+                    fixed = re.sub(r',\s*([\]}])', r'\1', fixed) 
+                    response_data = json.loads(fixed)
+                except Exception:
+                    pass
+
+            # --- PHASE 4: LAST RESORT REGEX EXTRACTION ---
+            if not response_data:
+                print("JSON Parsing failed completely. Falling back to regex extraction.")
+                # If we can't parse as JSON, let's at least extract the "text" values
+                # This catches the content even if the JSON is truncated or slightly broken
+                texts = re.findall(r'"text":\s*"((?:\\.|[^"\\])*)"', json_to_parse)
+                if texts:
+                    segments = [{'text': t.encode().decode('unicode_escape'), 'emotion': 'neutral'} for t in texts]
+                else:
+                    # If all else fails, use the raw text but cleaned
+                    segments = [{'text': clean_text, 'emotion': 'neutral'}]
             else:
-                json_to_parse = clean_text
+                # Standard segment extraction
+                message_counter += 1
+                last_error = None
+                segments = response_data.get('segments')
+                if not segments:
+                    text_content = response_data.get('text', response_data.get('response', clean_text))
+                    emotion_content = response_data.get('emotion', 'neutral')
+                    segments = [{'text': text_content, 'emotion': emotion_content}]
 
-            # 3. Final attempt to load
-            response_data = json.loads(json_to_parse)
-                
-            message_counter += 1
-            last_error = None
-            
-            segments = response_data.get('segments')
-            if not segments:
-                # Handle single-object format
-                text_content = response_data.get('text', response_data.get('response', clean_text))
-                emotion_content = response_data.get('emotion', 'neutral')
-                segments = [{'text': text_content, 'emotion': emotion_content}]
+            return jsonify({'segments': segments})
 
+        except Exception as final_err:
+            print(f"CRITICAL PARSING ERROR: {final_err}")
             return jsonify({
-                'segments': segments
-            })
-        except Exception as json_err:
-            print(f"Error parsing JSON from Gemini: {json_err}\nRaw text: {raw_text}")
-            # Fallback if it failed to output valid JSON
-            return jsonify({
-                'segments': [{'text': raw_text.replace('```json', '').replace('```', '').strip(), 'emotion': 'neutral'}]
+                'segments': [{'text': "Ay mi amor, me dio un torzón en el sistema y no pude entender bien. ¿Me lo repites?", 'emotion': 'sad'}]
             })
             
     except Exception as e:
