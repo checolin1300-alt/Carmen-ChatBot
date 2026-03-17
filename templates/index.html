@@ -74,6 +74,7 @@
 
                 <img id="layer-body-base" class="sprite-layer" src="{{ url_for('static', filename='sprites/body_base.png') }}" alt="Body">
                 <img id="layer-body-talking" class="sprite-layer hidden" src="{{ url_for('static', filename='sprites/body_talking.png') }}" alt="Talking">
+                <img id="layer-body-talking-sad" class="sprite-layer hidden" src="{{ url_for('static', filename='sprites/Body_Talking_Sad.png') }}" alt="Talking Sad">
                 <img id="layer-face" class="sprite-layer" src="{{ url_for('static', filename='sprites/face_neutral.png') }}" alt="Face">
                 <img id="layer-eyes" class="sprite-layer hidden" src="{{ url_for('static', filename='sprites/eyes_blink.png') }}" alt="Eyes">
             </div>
@@ -111,6 +112,6 @@
     <script>
         window.STATIC_SPRITES_URL = "{{ url_for('static', filename='sprites/') }}";
     </script>
-    <script src="{{ url_for('static', filename='js/script.js') }}?v=3"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=4"></script>
 </body>
 </html>

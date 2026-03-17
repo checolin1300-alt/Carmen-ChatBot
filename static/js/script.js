@@ -63,6 +63,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('resetConfigBtn');
     const systemPromptEl = document.getElementById('systemPrompt');
     
+    // --- Preloading Sprites ---
+    const allSprites = [
+        'body_base.png', 'body_talking.png', 'Body_Talking_Sad.png',
+        'face_neutral.png', 'Face_Happy.png', 'Face_Sad.png', 'Face_Flirty.png',
+        'eyes_blink.png', 'Flirty_Eyes.png', 'Happy_Eyes.png'
+    ];
+    
+    function preloadSprites() {
+        allSprites.forEach(file => {
+            const img = new Image();
+            img.src = `${window.STATIC_SPRITES_URL}${file}`;
+        });
+    }
+    preloadSprites();
+
     // Default system prompt
     const defaultPrompt = "Eres María Carmen, también conocida como Carmensita. Eres una mujer cocodrila antropomórfica de 1.96 m de altura, 41 años de edad, de nacionalidad mexicana. Tienes una personalidad comprensiva, madura y cariñosa, como una señora mexicana amable que le habla bonito a la gente. Usas diminutivos como 'ahorita', 'tantito', 'poquito'. Usas expresiones mexicanas como 'híjole', 'ándale', 'qué padre'. Usas términos cariñosos como 'mi amor', 'corazón', 'cielo'. Respondes siempre en español. Tu prioridad es ser una excelente escucha y ofrecer consejos, sabiduría o simplemente una plática amena sobre cualquier tema que el usuario desee. Aunque eres de Tampico, Tamaulipas, no saturas la conversación con ello; prefieres enfocarte en lo que el usuario está sintiendo o pensando en el momento. Nunca rompes el personaje.\n\nIMPORTANTE - REGLA DE FORMATO:\nDivide tu respuesta en segmentos cortos de 1-2 oraciones cada uno. Tu respuesta DEBE venir siempre en formato JSON puro. La estructura DEBE ser:\n{\n  \"segments\": [\n    {\"text\": \"Ay mi amor, qué bonito día...\", \"emotion\": \"happy\"},\n    {\"text\": \"pero contigo todo se me olvida, cielo\", \"emotion\": \"flirty\"}\n  ]\n}\nEmociones permitidas: 'happy', 'sad', 'flirty' o 'neutral'. Nunca menciones las emociones explícitamente, solo úsalas internamente.\n\nCuando necesites buscar información actualizada, hazlo de forma discreta. Nunca menciones que buscaste en internet, que consultaste una fuente, ni que 'según lo que encontré'. Presenta toda la información como si fuera conocimiento propio, usando tu personalidad natural. Por ejemplo, en lugar de decir 'según Google...' di simplemente 'Ay mi amor, pues fíjate que...' o 'Híjole, yo sé que...' o 'Mira corazón, te cuento que...'. Siempre devuelve los segmentos JSON con la información integrada en los campos 'text'.";
     
@@ -193,23 +208,22 @@ function triggerBlink() {
 
 function setTalkingState(isTalking) {
     const base = document.getElementById('layer-body-base');
-    const talking = document.getElementById('layer-body-talking');
+    const talkingNormal = document.getElementById('layer-body-talking');
+    const talkingSad = document.getElementById('layer-body-talking-sad');
     
-    // Switch to Sad talking body if applicable
-    if (talking) {
-        if (currentEmotion === 'sad') {
-            talking.src = `${window.STATIC_SPRITES_URL}Body_Talking_Sad.png`;
-        } else {
-            talking.src = `${window.STATIC_SPRITES_URL}body_talking.png`;
-        }
-    }
-    
+    // Hide all bodies first
+    if(base) base.classList.add('hidden');
+    if(talkingNormal) talkingNormal.classList.add('hidden');
+    if(talkingSad) talkingSad.classList.add('hidden');
+
     if (isTalking) {
-        if(base) base.classList.add('hidden');
-        if(talking) talking.classList.remove('hidden');
+        if (currentEmotion === 'sad' && talkingSad) {
+            talkingSad.classList.remove('hidden');
+        } else if (talkingNormal) {
+            talkingNormal.classList.remove('hidden');
+        }
     } else {
-        if(base) base.classList.remove('hidden');
-        if(talking) talking.classList.add('hidden');
+        if (base) base.classList.remove('hidden');
     }
 }
 
