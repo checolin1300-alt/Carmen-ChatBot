@@ -129,20 +129,39 @@ def chat():
         raw_text = response.text
         
         # Robustly try to extract JSON from the response text
-        # in case Gemini adds markdown or extra text
         try:
-            # Look for JSON between curly braces if it's not pure JSON
             import re
-            json_match = re.search(r'\{.*\}', raw_text, re.DOTALL)
+            
+            # 1. Strip whitespace and markdown markers first
+            clean_text = raw_text.strip()
+            if clean_text.startswith("```json"):
+                clean_text = clean_text[7:]
+            if clean_text.endswith("```"):
+                clean_text = clean_text[:-3]
+            clean_text = clean_text.strip()
+            
+            # 2. Extract content between first { and last }
+            json_match = re.search(r'\{.*\}', clean_text, re.DOTALL)
             if json_match:
-                response_data = json.loads(json_match.group(0))
+                json_to_parse = json_match.group(0)
             else:
-                response_data = json.loads(raw_text)
+                json_to_parse = clean_text
+
+            # 3. Final attempt to load
+            response_data = json.loads(json_to_parse)
                 
             message_counter += 1
-            last_error = None # Clear if successful
+            last_error = None
+            
+            segments = response_data.get('segments')
+            if not segments:
+                # Handle single-object format
+                text_content = response_data.get('text', response_data.get('response', clean_text))
+                emotion_content = response_data.get('emotion', 'neutral')
+                segments = [{'text': text_content, 'emotion': emotion_content}]
+
             return jsonify({
-                'segments': response_data.get('segments', [{'text': raw_text, 'emotion': 'neutral'}])
+                'segments': segments
             })
         except Exception as json_err:
             print(f"Error parsing JSON from Gemini: {json_err}\nRaw text: {raw_text}")
